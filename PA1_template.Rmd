@@ -1,6 +1,9 @@
 # Reproducible Research: Peer Assessment 1
 
 
+## Unzip the data
+
+
 ## Loading and preprocessing the data
 
 
@@ -18,3 +21,7 @@
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+
+vi: spell spl=en ft=markdown
