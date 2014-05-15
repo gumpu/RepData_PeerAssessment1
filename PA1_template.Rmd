@@ -1,27 +1,134 @@
 # Reproducible Research: Peer Assessment 1
 
 
-## Unzip the data
-
-
 ## Loading and preprocessing the data
 
+The data is contained in a zip file, so we unpack it using `zcat`
+and read it.
+```{r}
+zippeddata <- "activity.zip"
+dataset <- read.table(pipe(paste("zcat", zippeddata)), 
+                      sep=",", header=TRUE,
+                      colClasses=c("numeric","Date","factor"))
+```
 
+```{r}
+dataset$weekday <- factor(weekdays(dataset$date))
+```
+
+
+
+We split the dataset into two separate sets one that has no missing values,
+and one that has missing values for `steps`.
+
+```{r}
+dataset_noNA <- dataset[!is.na(dataset$steps),]
+dataset_NA   <- dataset[is.na(dataset$steps),]
+```
 
 ## What is mean total number of steps taken per day?
 
+We compute the total number of steps taken each day.
+
+```{r}
+steps_per_day <- aggregate(steps ~ date, data=dataset_noNA, sum)
+```
+
+```{r fig.width=6, fig.height=4}
+require(ggplot2)
+ggplot(steps_per_day,aes(x=steps))+geom_histogram(binwidth=2500)
+```
+
+
+```{r}
+mean_steps   <- mean(steps_per_day$steps) 
+median_steps <- median(steps_per_day$steps)
+```
+
+The mean number of steps is `r mean_steps`.
+
+The median number of steps is `r median_steps`.
 
 
 ## What is the average daily activity pattern?
 
+We compute the mean number of steps per interval.
 
+```{r}
+mean_steps_by_interval <- aggregate(steps~interval, dataset_noNA, mean)
+```
+
+The interval is actually a encoded version of the time of day of the interval.
+So interval 1200 starts is at 12:00. We use this to create some timestamps, these
+will make it easier to plot and understand the data.
+
+```{r}
+mean_steps_by_interval$time_of_day <- strptime(
+    sprintf("%04d", as.numeric( 
+    as.character(mean_steps_by_interval$interval) ) ), "%H%M")
+```
+
+We plot the mean number of steps as function of the interval.
+```{r fig.width=6, fig.height=4}
+require(ggplot2)
+require(scales)
+
+ggplot(mean_steps_by_interval, aes(x=time_of_day, y=steps)) + 
+     geom_point() +
+     scale_x_datetime(labels=date_format("%H:%M")) + 
+     xlab("interval") + 
+     ylab("average number of steps")
+```
+
+We find the interval with the, on average, highest number of steps.
+```{r}
+step_sorted <- sort(mean_steps_by_interval$steps, index.return=TRUE, decreasing=TRUE)
+interval    <- mean_steps_by_interval[step_sorted$ix[1], "interval"]
+```
+
+This is `r interval`. 
 
 ## Imputing missing values
 
+We replace the missing values for `steps` with the mean number of steps
+for the corresponding interval.
 
+We do this by using `interval` as an index into `mean_steps_by_interval`.
+```{r}
+dataset_NA$steps <- mean_steps_by_interval[dataset_NA$interval, "steps"]
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
+First we combine the two datasets back into a single dataset.
+```{r}
+dataset <- rbind(dataset_NA, dataset_noNA)
+```
 
+Compute the average number steps groups per interval and weekend/week day.
+```{r}
+dataset$weekend <- dataset$weekday %in% c("Saturday", "Sunday")
+mean_steps_by_interval <- aggregate(steps~interval+weekend, dataset, mean)
+```
+
+And make a plot of this where the color indicates the weekend / weekday division.
+```{r fig.width=6, fig.height=4}
+
+mean_steps_by_interval$time_of_day <- strptime(
+    sprintf("%04d", as.numeric( 
+    as.character(mean_steps_by_interval$interval) ) ), "%H%M")
+
+ggplot(mean_steps_by_interval,aes(x=time_of_day,y=steps,color=weekend))+geom_point()+
+     scale_x_datetime(labels=date_format("%H:%M")) +
+     xlab("interval") + 
+     ylab("average number of steps")
+```
+
+
+
+## Version Info
+```{r}
+sessionInfo()
+```
 
 vi: spell spl=en ft=markdown
