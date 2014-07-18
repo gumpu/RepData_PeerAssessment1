@@ -136,7 +136,8 @@ steps_per_day <- rbind(steps_per_day, steps_per_day_imp)
 We plot both the histogram of the data with and without the imputed missing values.
 ```{r histo_imputed_vs_not_imputed, fig.width=6, fig.height=4, dpi=100}
 require(ggplot2)
-ggplot(steps_per_day,aes(x=steps, fill=imputed))+geom_histogram(binwidth=2500, position="dodge")
+ggplot(steps_per_day,aes(x=steps, fill=imputed)) + 
+  geom_histogram(binwidth=2500, position="dodge")
 ```
 Looks like it only had on effect on the center.
 
